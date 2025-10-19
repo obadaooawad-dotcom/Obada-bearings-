@@ -1,0 +1,48 @@
+name: Build APK for Obada Bearings
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set up job
+        run: echo "Starting build for Obada Bearings"
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.19.6"
+
+      # ✅ فك التشفير وإنشاء ملف keystore
+      - name: Decode keystore
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 --decode > android/app/obada-keystore.jks
+
+      # ✅ إنشاء ملف key.properties
+      - name: Create key.properties
+        run: |
+          echo "storeFile=obada-keystore.jks" > android/key.properties
+          echo "storePassword=$KEYSTORE_PASSWORD" >> android/key.properties
+          echo "keyAlias=$KEY_ALIAS" >> android/key.properties
+          echo "keyPassword=$KEY_PASSWORD" >> android/key.properties
+
+      # ✅ تثبيت التبعيات
+      - name: Get dependencies
+        run: flutter pub get
+
+      # ✅ بناء APK موقّع
+      - name: Build release APK
+        run: flutter build apk --release
+
+      # ✅ رفع الـ APK كـ Artifact
+      - name: Upload signed APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Obada-Bearings-APK
+          path: build/app/outputs/flutter-apk/app-release.apk
